@@ -1,5 +1,6 @@
 <html>
     <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <style>
             * {
                 box-sizing: border-box;
@@ -9,6 +10,11 @@
                 padding: 0;
                 font-family: monospace;
                 font-size: 14px;
+            }
+            body {
+                position: absolute;
+                margin-left: 50%;
+                transform: translateX(-50%);
             }
             .table {
                 display: table;
@@ -28,32 +34,79 @@
             div {
                 display: inline-block;
             }
-            input[type=button]:not(:first-child) {
-                margin-left: 8px;
-            }
             #treatments::before {
                 content: "Treatments:";
             }
             #result::before {
                 content: "Results:";
             }
+            #treatment-selector {
+                display: grid;
+            }
         </style>
     </head>
     <body>
-        <div id="input" class="table"></div>
+
+        <div id="input" class="table">
+            <div class="input-group">
+                <label for="day">Day of the week</label>
+                <select type="day" id="day" onchange="setup()">
+                    <option value="Monday">Monday</option>
+                    <option value="Tuesday">Tuesday</option>
+                    <option value="Wednesday">Wednesday</option>
+                    <option value="Thursday">Thursday</option>
+                    <option value="Friday">Friday</option>
+                    <option value="Saturday">Saturday</option>
+                    <option value="Sunday">Sunday</option>
+                </select>
+            </div>
+            <div class="treatment-fare">
+                <label for="non-treatment-fare">Treatment fare (€)</label>
+                <input type="text" id="treatment-fare" onchange="calculate()" placeholder="€">
+            </div>
+            <div class="input-group">
+                <label for="non-treatment-fare">Non-Treatment fare (€)</label>
+                <input type="text" id="non-treatment-fare" onchange="calculate()" placeholder="€">
+            </div>
+            <div class="input-group">
+                <label for="start-time">Start time</label>
+                <input type="time" id="start-time" onchange="calculate()">
+            </div>
+            <div class="input-group">
+                <label for="end-time">End time</label>
+                <input type="time" id="end-time" onchange="calculate()">
+            </div>
+            <div class="input-group">
+                <label>Add a treatment</label>
+                <div id="treatment-selector">
+                    <input onclick='addTreatment(15 * MINUTE)'type="button" value="15 min.">
+                    <input onclick='addTreatment(30 * MINUTE)'type="button" value="30 min.">
+                    <input onclick='addTreatment(45 * MINUTE)'type="button" value="45 min.">
+                    <input onclick='addTreatment(60 * MINUTE)'type="button" value="60 min.">
+                    <input onclick='addTreatment(90 * MINUTE)'type="button" value="90 min.">
+                </div>
+            </div>
+        </div>
+        <div>
         <div id="treatments" class="table"></div>
         <div id="result" class="table"></div>
+        </div>
+
         <script>
 
             // everything in ms
+
+            const CURRENCY = '€';
+            const MINUTE = 60 * 1000;
+            const HOUR = 60 * MINUTE;
 
             const input = document.getElementById('input');
 
             let treatments = [];
 
-            const CURRENCY = '€';
-            const MINUTE = 60 * 1000;
-            const HOUR = 60 * MINUTE;
+            const treatmentHours = () => {
+                return [...document.getElementById('treatments').children].map(x => x.duration).reduce((a, b) => a + b, 0);
+            };
 
             const get_date = (text) => {
                 const match = /(\d+):(\d+)/.exec(text);
@@ -67,10 +120,6 @@
                 const start = get_date(document.getElementById('start-time').value);
                 const end = get_date(document.getElementById('end-time').value);
                 return (end - start) - (1 * HOUR);
-            };
-
-            const treatmentHours = () => {
-                return [...document.getElementById('treatments').children].map(x => x.duration).reduce((a, b) => a + b, 0);
             };
 
             const extraTime = () => {
@@ -93,18 +142,19 @@
                 return 45 * MINUTE;
             };
 
-            const duration = ms => {
+            const duration = (ms) => {
                 const sec = ms / 1000;
                 const hours = Math.floor(sec / 3600);
                 const minutes = Math.floor((sec - hours * 3600) / 60);
                 return `${hours}h ${minutes}m`;
             };
 
-            const amount = v => {
+            const amount = (v) => {
                 return `${v.toFixed(2)}${CURRENCY}`;
             }
 
-            const evaluate = () => {
+            const calculate = () => {
+
                 const tTime = treatmentHours();
                 const wTime = workingHours() - tTime;
                 const eTime = extraTime();
@@ -137,7 +187,7 @@
                 );
             };
 
-            const addTreatment = (input) => {
+            const addTreatment = (duration) => {
 
                 const createTreatmentEntry = (duration) => {
                     const container = document.createElement('div');
@@ -150,70 +200,41 @@
                     remove.value = 'Remove';
                     remove.onclick = () => {
                         container.remove();
-                        evaluate();
+                        calculate();
                     };
                     container.append(value, remove);
                     return container;
                 }
 
                 document.getElementById('treatments').append(
-                    createTreatmentEntry(input.target.duration)
+                    createTreatmentEntry(duration)
                 );
 
-                evaluate();
+                calculate();
             };
 
-            const treatmentAdder = (name) => {
-                const container = document.createElement('div');
-                container.classList.add('input-group')
-                const label = document.createElement('div')
-                label.innerText = name;
-                const choices = document.createElement('div');
-                choices.style.display = 'inline-block';
-                buttons = [15, 30, 45, 60, 90].map(x => x * MINUTE).map(duration => {
-                    const button = document.createElement('input');
-                    button.setAttribute('type', 'button');
-                    button.value = `${duration / MINUTE} min.`;
-                    button.duration = duration;
-                    button.onclick = addTreatment;
-                    return button;
-                });
-                choices.append(...buttons);
-                container.append(label, choices);
-                return container
-            };
+            const setup = () => {
 
-            function currency_field(id, value) {
-                const input = document.createElement('input');
-                input.input.setAttribute('type', 'text');
-                input.input.setAttribute('id', id);
-                return input;
+                const DayOfWeek =  document.getElementById("day").value;
+                const SpecialDays = ["Saturday", "Sunday"];
+                const isSpecialDay = SpecialDays.indexOf(DayOfWeek) != -1;
+
+                document.getElementById("start-time").value = isSpecialDay ? "11:00" : "10:00"
+                document.getElementById("end-time").value = isSpecialDay ? "18:00" : "19:00"
+                document.getElementById("treatment-fare").value = isSpecialDay ? 18.0 : 18.0;
+                document.getElementById("non-treatment-fare").value = isSpecialDay ? 10.5 : 10.5;
+
+                calculate();
             }
 
-            const createField = (name, id, type, def) => {
-                const container = document.createElement('div');
-                container.classList.add('input-group')
-                const label = document.createElement('div')
-                label.innerText = name;
-                const input = document.createElement('input');
-                input.setAttribute('type', type);
-                input.setAttribute('id', id);
-                input.onchange = evaluate;
-                if (def !== undefined) {
-                    input.value = def;
-                }
-                container.append(label, input);
-                return container
-            };
+            const initialize = () => {
+                const nameOfDay = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+                document.getElementById("day").value = nameOfDay[(new Date()).getDay() % 7];
+                setup();
+            }
 
-            input.append(
-                createField('Day of the week', 'day', 'day', 18.0),
-                createField('Treatment fare (€)', 'treatment-fare', 'text', 18.0),
-                createField('Non-Treatment fare (€)', 'non-treatment-fare', 'text', 10.5),
-                createField('Start  time', 'start-time', 'time'),
-                createField('End time', 'end-time', 'time'),
-                treatmentAdder('Add a treatment')
-            )
+            initialize();
+
         </script>
     </body>
 </html>
