@@ -30,6 +30,7 @@
             }
             .table > * > * {
                 display: table-cell;
+                vertical-align: middle;
             }
             div {
                 display: inline-block;
@@ -49,7 +50,7 @@
 
         <div id="input" class="table">
             <div class="input-group">
-                <label for="day">Day of the week</label>
+                <label for="day">Day</label>
                 <select type="day" id="day" onchange="setup()">
                     <option value="Monday">Monday</option>
                     <option value="Tuesday">Tuesday</option>
@@ -122,18 +123,28 @@
                 return (end - start) - (1 * HOUR);
             };
 
+            const isHolyday = () => {
+                const HOLYDAYS = ["Saturday", "Sunday"];
+                const DayOfWeek =  document.getElementById("day").value;
+                return HOLYDAYS.indexOf(DayOfWeek) != -1;
+            };
+
             const extraTime = () => {
 
                 const end = get_date(document.getElementById('end-time').value);
 
-                if (end.getHours() < 19) {
+                const start = isHolyday() ? 18 : 19;
+
+                if (end.getHours() < start) {
                     return 0 * MINUTE;
                 }
 
-                if (end.getHours() == 19) {
+                if (end.getHours() == start) {
+
                     if (end.getMinutes() < 15) {
                         return 15 * MINUTE;
                     }
+
                     if (end.getMinutes() < 30) {
                         return 30 * MINUTE;
                     }
@@ -215,14 +226,10 @@
 
             const setup = () => {
 
-                const DayOfWeek =  document.getElementById("day").value;
-                const SpecialDays = ["Saturday", "Sunday"];
-                const isSpecialDay = SpecialDays.indexOf(DayOfWeek) != -1;
-
-                document.getElementById("start-time").value = isSpecialDay ? "11:00" : "10:00"
-                document.getElementById("end-time").value = isSpecialDay ? "18:00" : "19:00"
-                document.getElementById("treatment-fare").value = isSpecialDay ? 18.0 : 18.0;
-                document.getElementById("non-treatment-fare").value = isSpecialDay ? 10.5 : 10.5;
+                document.getElementById("start-time").value = isHolyday() ? "11:00" : "10:00"
+                document.getElementById("end-time").value = isHolyday() ? "18:00" : "19:00"
+                document.getElementById("treatment-fare").value = isHolyday() ? 18.0 : 18.0;
+                document.getElementById("non-treatment-fare").value = isHolyday() ? 10.5 : 10.5;
 
                 calculate();
             }
