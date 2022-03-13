@@ -2,9 +2,6 @@
     <head>
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <style>
-            * {
-                box-sizing: border-box;
-            }
             html, body {
                 margin: 0;
                 padding: 0;
@@ -21,7 +18,7 @@
                 border-collapse: separate;
                 border-spacing: 16px 8px;
                 border: solid 1px gray;
-                margin: 8px;
+                margin: 8px 8px 0px 8px;
                 border-radius: 8px;
             }
             .table > * {
@@ -34,6 +31,9 @@
             }
             div {
                 display: inline-block;
+            }
+            #treatment-selector * {
+                margin-bottom: 4px;
             }
             #treatments::before {
                 content: "Treatments:";
@@ -132,25 +132,9 @@
             const extraTime = () => {
 
                 const end = get_date(document.getElementById('end-time').value);
+                const endingTime = isHolyday() ? 18 : 19;
 
-                const start = isHolyday() ? 18 : 19;
-
-                if (end.getHours() < start) {
-                    return 0 * MINUTE;
-                }
-
-                if (end.getHours() == start) {
-
-                    if (end.getMinutes() < 15) {
-                        return 15 * MINUTE;
-                    }
-
-                    if (end.getMinutes() < 30) {
-                        return 30 * MINUTE;
-                    }
-                }
-
-                return 45 * MINUTE;
+                return (end.getHours() < endingTime ? 0 : 15) * MINUTE
             };
 
             const duration = (ms) => {
